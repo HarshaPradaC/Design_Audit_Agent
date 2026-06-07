@@ -1,18 +1,19 @@
 import { motion } from 'framer-motion'
 
-export default function ProgressBar({ percent, stage }) {
+export default function ProgressBar({ percent = 0, stage = '' }) {
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm text-slate-400">
-        <span>{stage || 'Processing...'}</span>
-        <span>{percent}%</span>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-ink-2 truncate pr-4">{stage || 'Processing…'}</span>
+        <span className="text-xs font-mono text-ink-3 tabular-nums flex-shrink-0">{percent}%</span>
       </div>
-      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+      {/* Track */}
+      <div className="relative w-full h-1 bg-edge-2 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"
+          className="absolute inset-y-0 left-0 bg-accent rounded-full"
           initial={{ width: '0%' }}
           animate={{ width: `${percent}%` }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
         />
       </div>
     </div>

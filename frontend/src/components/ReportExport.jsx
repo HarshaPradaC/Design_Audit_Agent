@@ -1,7 +1,5 @@
-/** Converts any absolute or relative path to a /reports/<filename> URL. */
-function reportUrl(path) {
+function toReportUrl(path) {
   if (!path) return null
-  // Handle Windows backslashes and POSIX forward slashes
   const filename = path.replace(/\\/g, '/').split('/').pop()
   return filename ? `/reports/${filename}` : null
 }
@@ -17,47 +15,51 @@ export default function ReportExport({ report }) {
     a.click()
   }
 
-  const htmlUrl = reportUrl(report.html_report)
-  const annotatedUrl = reportUrl(report.annotated_screenshot)
-  const annotatedFilename = report.annotated_screenshot
+  const htmlUrl       = toReportUrl(report.html_report)
+  const annotatedUrl  = toReportUrl(report.annotated_screenshot)
+  const annotFilename = report.annotated_screenshot
     ? report.annotated_screenshot.replace(/\\/g, '/').split('/').pop()
     : null
 
   return (
-    <div className="mt-4 space-y-2">
-      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Export &amp; Download</div>
+    <div className="space-y-2.5">
+      <div className="label">Export</div>
       <div className="flex flex-wrap gap-2">
-        {/* JSON always available */}
-        <button
-          onClick={downloadJson}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-slate-200 transition-colors border border-slate-600 hover:border-slate-500"
-        >
-          <span>⬇</span>
-          <span>JSON Report</span>
+
+        {/* JSON report */}
+        <button onClick={downloadJson} className="btn-secondary flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1v7M3.5 6L6 8.5 8.5 6M1 10.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          JSON Report
         </button>
 
-        {/* HTML opens in new tab — served as static file from /reports */}
+        {/* Full HTML report */}
         {htmlUrl && (
           <a
             href={htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-600 rounded-lg text-sm text-blue-100 transition-colors border border-blue-600 hover:border-blue-500 no-underline"
+            className="btn-primary flex items-center gap-1.5 no-underline"
           >
-            <span>↗</span>
-            <span>Full HTML Report</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M5 2H2.5A1.5 1.5 0 001 3.5v6A1.5 1.5 0 002.5 11h6A1.5 1.5 0 0010 9.5V7M7.5 1H11m0 0v3.5M11 1L5.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Full HTML Report
           </a>
         )}
 
-        {/* Annotated PNG — direct download */}
+        {/* Annotated PNG */}
         {annotatedUrl && (
           <a
             href={annotatedUrl}
-            download={annotatedFilename}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-slate-200 transition-colors border border-slate-600 hover:border-slate-500 no-underline"
+            download={annotFilename}
+            className="btn-secondary flex items-center gap-1.5 no-underline"
           >
-            <span>⬇</span>
-            <span>Annotated PNG</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1v7M3.5 6L6 8.5 8.5 6M1 10.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Annotated PNG
           </a>
         )}
       </div>
