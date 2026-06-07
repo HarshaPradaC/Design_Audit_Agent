@@ -1,0 +1,13 @@
+url: "https://example.com"
+name: "demo-site"
+auth:
+  type: "none"
+pages:
+  - path: "/"
+    name: "homepage"
+    wait_for: null
+    scroll_to: "top"
+    dynamic_masks: []
+viewport:
+  width: 1440
+  height: 900
