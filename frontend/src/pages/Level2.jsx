@@ -10,25 +10,72 @@ import AnnotatedViewer from '../components/AnnotatedViewer'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GRADE_COLORS = {
-  'A+': '#22c55e', A: '#22c55e', 'A-': '#22c55e',
-  'B+': '#84cc16', B: '#84cc16', 'B-': '#84cc16',
-  'C+': '#eab308', C: '#eab308', 'C-': '#eab308',
-  'D+': '#f97316', D: '#f97316', 'D-': '#f97316',
-  F: '#ef4444',
+  'A+': '#2d8f52', A: '#2d8f52', 'A-': '#2d8f52',
+  'B+': '#3a70b8', B: '#3a70b8', 'B-': '#3a70b8',
+  'C+': '#a08210', C: '#a08210', 'C-': '#a08210',
+  'D+': '#c2601a', D: '#c2601a', 'D-': '#c2601a',
+  F: '#c44444',
 }
 
+// Classification row styles — warm graphite palette, no slate-*
 const CLS_STYLES = {
-  regression:  { card: 'border-red-800/50 bg-red-950/20',    badge: 'bg-red-900/40 text-red-300 border-red-800/50',    icon: '↓', ic: 'text-red-400' },
-  improvement: { card: 'border-green-800/50 bg-green-950/20', badge: 'bg-green-900/40 text-green-300 border-green-800/50', icon: '↑', ic: 'text-green-400' },
-  neutral:     { card: 'border-slate-700 bg-slate-800/30',   badge: 'bg-slate-700 text-slate-300 border-slate-600',    icon: '→', ic: 'text-slate-500' },
+  regression: {
+    card:  'border-red-900/40 bg-red-950/10',
+    badge: 'badge badge-critical',
+    arrow: '↓',
+    arrowColor: 'text-sev-critical',
+  },
+  improvement: {
+    card:  'border-green-900/40 bg-green-950/10',
+    badge: 'badge badge-success',
+    arrow: '↑',
+    arrowColor: 'text-sev-success',
+  },
+  neutral: {
+    card:  'border-edge-2 bg-surface-1',
+    badge: 'badge badge-info',
+    arrow: '→',
+    arrowColor: 'text-ink-3',
+  },
 }
 
+// Suggestion priority styles — warm, muted severity palette
 const SG_STYLES = {
-  critical: { card: 'border-red-800/50 bg-red-950/20',     ib: 'bg-red-900/40',     tt: 'text-red-300',    tag: 'bg-red-900/30 text-red-400 border-red-800/50' },
-  high:     { card: 'border-orange-800/50 bg-orange-950/20', ib: 'bg-orange-900/40', tt: 'text-orange-300', tag: 'bg-orange-900/30 text-orange-400 border-orange-800/50' },
-  medium:   { card: 'border-yellow-800/50 bg-yellow-950/20', ib: 'bg-yellow-900/40', tt: 'text-yellow-300', tag: 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50' },
-  positive: { card: 'border-green-800/50 bg-green-950/20',  ib: 'bg-green-900/40',  tt: 'text-green-300',  tag: 'bg-green-900/30 text-green-400 border-green-800/50' },
-  info:     { card: 'border-slate-700 bg-slate-800/30',     ib: 'bg-slate-700',     tt: 'text-slate-300',  tag: 'bg-slate-700 text-slate-400 border-slate-600' },
+  critical: {
+    border:     'border-red-900/40',
+    bg:         'bg-red-950/10',
+    iconBg:     'bg-red-950/40',
+    titleColor: 'text-sev-critical',
+    tag:        'badge badge-critical',
+  },
+  high: {
+    border:     'border-orange-900/40',
+    bg:         'bg-orange-950/10',
+    iconBg:     'bg-orange-950/40',
+    titleColor: 'text-sev-high',
+    tag:        'badge badge-high',
+  },
+  medium: {
+    border:     'border-yellow-900/40',
+    bg:         'bg-yellow-950/10',
+    iconBg:     'bg-yellow-950/40',
+    titleColor: 'text-sev-medium',
+    tag:        'badge badge-medium',
+  },
+  positive: {
+    border:     'border-green-900/40',
+    bg:         'bg-green-950/10',
+    iconBg:     'bg-green-950/40',
+    titleColor: 'text-sev-success',
+    tag:        'badge badge-success',
+  },
+  info: {
+    border:     'border-edge-2',
+    bg:         'bg-surface-1',
+    iconBg:     'bg-surface-3',
+    titleColor: 'text-ink-2',
+    tag:        'badge badge-info',
+  },
 }
 
 // ─── Suggestion engine ────────────────────────────────────────────────────────
@@ -98,7 +145,63 @@ function deriveSuggestions(changes) {
   return sg
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function GradeCell({ label, grade, score, findingsCount }) {
+  const color = GRADE_COLORS[grade] ?? '#5e5c58'
+  return (
+    <div className="card p-5 text-center flex flex-col items-center gap-1">
+      <div className="label mb-2">{label}</div>
+      <div className="text-5xl font-black leading-none" style={{ color }}>
+        {grade ?? '—'}
+      </div>
+      <div className="text-xl font-bold text-ink-1 mt-1">
+        {score}
+        <span className="text-xs font-normal text-ink-3"> /100</span>
+      </div>
+      <div className="text-xs text-ink-3 mt-0.5">
+        {findingsCount} finding{findingsCount !== 1 ? 's' : ''}
+      </div>
+    </div>
+  )
+}
+
+function DeltaCell({ verdict, scoreDelta, netRegressions, netImprovements }) {
+  const isRegression  = verdict?.includes('REGRESSION')
+  const isImprovement = verdict?.includes('IMPROVEMENT')
+
+  const borderColor = isRegression  ? 'border-red-900/40'
+                    : isImprovement ? 'border-green-900/40'
+                    : 'border-edge-2'
+  const bgColor     = isRegression  ? 'bg-red-950/10'
+                    : isImprovement ? 'bg-green-950/10'
+                    : 'bg-surface-1'
+  const verdictColor = isRegression  ? 'text-sev-critical'
+                     : isImprovement ? 'text-sev-success'
+                     : 'text-ink-3'
+  const deltaColor   = scoreDelta > 0 ? 'text-sev-success'
+                     : scoreDelta < 0 ? 'text-sev-critical'
+                     : 'text-ink-3'
+
+  return (
+    <div className={`rounded-lg border ${borderColor} ${bgColor} p-5 flex flex-col items-center justify-center text-center gap-1`}>
+      <div className={`text-xs font-bold uppercase tracking-widest ${verdictColor}`}>
+        {verdict?.replace('NET ', '') ?? '—'}
+      </div>
+      <div className={`text-4xl font-black leading-none mt-1 ${deltaColor}`}>
+        {scoreDelta > 0 ? '+' : ''}{scoreDelta}
+      </div>
+      <div className="label mt-0.5">score delta</div>
+      <div className="flex items-center gap-3 mt-2">
+        <span className="text-xs font-semibold text-sev-critical">{netRegressions} ↓</span>
+        <span className="text-ink-3">·</span>
+        <span className="text-xs font-semibold text-sev-success">{netImprovements} ↑</span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Level2() {
   const [before,        setBefore]        = useState(null)
@@ -114,7 +217,7 @@ export default function Level2() {
   const handleBefore = (file) => {
     setBefore(file)
     setBeforePreview(file ? URL.createObjectURL(file) : null)
-    setReport(null)   // reset results when input changes
+    setReport(null)
   }
   const handleAfter = (file) => {
     setAfter(file)
@@ -141,183 +244,174 @@ export default function Level2() {
 
   // Derived data
   const suggestions = deriveSuggestions(report?.changes)
-  const counts = report?.changes?.reduce((a, c) => ({ ...a, [c.classification]: (a[c.classification] || 0) + 1 }), {}) || {}
-  const filteredChanges = report?.changes?.filter(c => changeFilter === 'all' || c.classification === changeFilter) || []
+  const counts = report?.changes?.reduce(
+    (a, c) => ({ ...a, [c.classification]: (a[c.classification] || 0) + 1 }),
+    {}
+  ) || {}
+  const filteredChanges = report?.changes?.filter(
+    c => changeFilter === 'all' || c.classification === changeFilter
+  ) || []
 
-  const beforeScore = Math.round(report?.before_report?.summary?.overall_score ?? 0)
-  const afterScore  = Math.round(report?.after_report?.summary?.overall_score  ?? 0)
-  const scoreDelta  = afterScore - beforeScore
-  const beforeGrade = report?.before_report?.summary?.grade
-  const afterGrade  = report?.after_report?.summary?.grade
+  const beforeScore      = Math.round(report?.before_report?.summary?.overall_score ?? 0)
+  const afterScore       = Math.round(report?.after_report?.summary?.overall_score  ?? 0)
+  const scoreDelta       = afterScore - beforeScore
+  const beforeGrade      = report?.before_report?.summary?.grade
+  const afterGrade       = report?.after_report?.summary?.grade
+  const beforeFindings   = report?.before_report?.summary?.total_findings ?? 0
+  const afterFindings    = report?.after_report?.summary?.total_findings  ?? 0
+
+  const FILTER_TABS = ['all', 'regression', 'improvement', 'neutral']
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-white">Before / After Regression</h2>
-        <p className="text-slate-400 mt-1">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold text-ink-1">Before / After Regression</h2>
+        <p className="text-sm text-ink-2">
           Upload two screenshots to detect design regressions, WCAG accessibility drops, and improvements.
-          Elements are matched by position + semantic role and scored for impact.
+          Elements are matched by position and semantic role, then scored for impact.
         </p>
       </div>
 
-      {/* Upload pair */}
+      {/* ── Upload pair ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Before</div>
+          <div className="label mb-3">Before</div>
           <UploadZone onFile={handleBefore} file={before} label="Drop BEFORE screenshot" />
         </div>
         <div>
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">After</div>
+          <div className="label mb-3">After</div>
           <UploadZone onFile={handleAfter} file={after} label="Drop AFTER screenshot" />
         </div>
       </div>
 
+      {/* ── Compare button ──────────────────────────────────────────────────── */}
       <button
         onClick={analyze}
         disabled={!before || !after || loading}
-        className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors"
+        className="btn-primary w-full py-3 justify-center"
       >
         {loading ? 'Comparing…' : 'Compare Designs'}
       </button>
 
+      {/* ── Progress ────────────────────────────────────────────────────────── */}
       {loading && <ProgressBar percent={50} stage="Running regression analysis…" />}
 
+      {/* ── Error ───────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="bg-red-900/30 border border-red-800 rounded-xl p-4 text-red-300 text-sm">
+        <div className="card border-red-900/40 bg-red-950/10 p-4 text-sev-critical text-sm">
           {error}
         </div>
       )}
 
-      {/* ── Results ── */}
+      {/* ── Results ─────────────────────────────────────────────────────────── */}
       {report && beforePreview && afterPreview && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="space-y-8"
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="space-y-6"
         >
-          {/* ① INTERACTIVE SLIDER */}
-          <div className="space-y-2">
+
+          {/* ① Interactive Slider */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
-                Interactive Comparison
-              </h3>
-              <span className="text-xs text-slate-600">← drag to reveal →</span>
+              <div className="label">Interactive Comparison</div>
+              <span className="text-xs text-ink-3">← drag to reveal →</span>
             </div>
-            <div className="rounded-xl overflow-hidden border border-slate-700 select-none" style={{ lineHeight: 0 }}>
+            <div className="card overflow-hidden select-none" style={{ lineHeight: 0 }}>
               <ReactCompareImage
                 leftImage={beforePreview}
                 rightImage={afterPreview}
                 leftImageLabel="BEFORE"
                 rightImageLabel="AFTER"
-                sliderLineColor="#3b82f6"
+                sliderLineColor="#7c6af6"
                 sliderLineWidth={2}
                 handleSize={44}
               />
             </div>
           </div>
 
-          {/* ② SCORE COMPARISON */}
-          <div className="grid grid-cols-3 gap-3 items-stretch">
-            {/* Before */}
-            <div className="bg-slate-800/60 rounded-xl p-5 border border-slate-700 text-center">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Before</div>
-              <div className="text-5xl font-black" style={{ color: GRADE_COLORS[beforeGrade] ?? '#94a3b8' }}>
-                {beforeGrade ?? '—'}
-              </div>
-              <div className="text-slate-300 font-bold text-xl mt-1">
-                {beforeScore}<span className="text-xs text-slate-600 font-normal"> /100</span>
-              </div>
-              <div className="text-xs text-slate-600 mt-1.5">
-                {report.before_report?.summary?.total_findings ?? 0} findings
-              </div>
+          {/* ② Score comparison — 3-column */}
+          <div className="space-y-3">
+            <div className="label">Score Comparison</div>
+            <div className="grid grid-cols-3 gap-3 items-stretch">
+              <GradeCell
+                label="Before"
+                grade={beforeGrade}
+                score={beforeScore}
+                findingsCount={beforeFindings}
+              />
+              <DeltaCell
+                verdict={report.verdict}
+                scoreDelta={scoreDelta}
+                netRegressions={report.net_regressions}
+                netImprovements={report.net_improvements}
+              />
+              <GradeCell
+                label="After"
+                grade={afterGrade}
+                score={afterScore}
+                findingsCount={afterFindings}
+              />
             </div>
+          </div>
 
-            {/* Delta */}
-            <div className={`rounded-xl p-5 border flex flex-col items-center justify-center text-center ${
-              report.verdict === 'NET REGRESSION'  ? 'border-red-800/50 bg-red-950/20' :
-              report.verdict === 'NET IMPROVEMENT' ? 'border-green-800/50 bg-green-950/20' :
-                                                     'border-slate-700 bg-slate-800/30'
-            }`}>
-              <div className={`text-lg font-black tracking-wide ${
-                report.verdict.includes('REGRESSION')  ? 'text-red-400'   :
-                report.verdict.includes('IMPROVEMENT') ? 'text-green-400' : 'text-slate-400'
-              }`}>
-                {report.verdict.replace('NET ', '')}
+          {/* ③ Summary chips */}
+          <div className="space-y-3">
+            <div className="label">Change Summary</div>
+            <div className="flex flex-wrap gap-3">
+              {/* Regressions chip */}
+              <div className="card border-red-900/40 bg-red-950/10 px-5 py-3 flex items-center gap-3 min-w-[110px]">
+                <span className="text-2xl font-black text-sev-critical">{counts.regression ?? 0}</span>
+                <span className="text-xs font-medium text-sev-critical/70 uppercase tracking-wide leading-tight">
+                  Regressions
+                </span>
               </div>
-              <div className={`text-4xl font-black mt-2 ${
-                scoreDelta > 0 ? 'text-green-400' : scoreDelta < 0 ? 'text-red-400' : 'text-slate-500'
-              }`}>
-                {scoreDelta > 0 ? '+' : ''}{scoreDelta}
+              {/* Improvements chip */}
+              <div className="card border-green-900/40 bg-green-950/10 px-5 py-3 flex items-center gap-3 min-w-[110px]">
+                <span className="text-2xl font-black text-sev-success">{counts.improvement ?? 0}</span>
+                <span className="text-xs font-medium text-sev-success/70 uppercase tracking-wide leading-tight">
+                  Improvements
+                </span>
               </div>
-              <div className="text-xs text-slate-600 mt-0.5">score delta</div>
-              <div className="mt-3 flex gap-2 text-xs">
-                <span className="text-red-400 font-semibold">{report.net_regressions} ↓</span>
-                <span className="text-slate-600">·</span>
-                <span className="text-green-400 font-semibold">{report.net_improvements} ↑</span>
-              </div>
-            </div>
-
-            {/* After */}
-            <div className="bg-slate-800/60 rounded-xl p-5 border border-slate-700 text-center">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">After</div>
-              <div className="text-5xl font-black" style={{ color: GRADE_COLORS[afterGrade] ?? '#94a3b8' }}>
-                {afterGrade ?? '—'}
-              </div>
-              <div className="text-slate-300 font-bold text-xl mt-1">
-                {afterScore}<span className="text-xs text-slate-600 font-normal"> /100</span>
-              </div>
-              <div className="text-xs text-slate-600 mt-1.5">
-                {report.after_report?.summary?.total_findings ?? 0} findings
+              {/* Neutral chip */}
+              <div className="card px-5 py-3 flex items-center gap-3 min-w-[110px]">
+                <span className="text-2xl font-black text-ink-2">{counts.neutral ?? 0}</span>
+                <span className="text-xs font-medium text-ink-3 uppercase tracking-wide leading-tight">
+                  Neutral
+                </span>
               </div>
             </div>
           </div>
 
-          {/* ③ SUMMARY CHIPS */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-red-950/20 border border-red-900/40 rounded-xl p-4 text-center">
-              <div className="text-3xl font-black text-red-400">{counts.regression ?? 0}</div>
-              <div className="text-xs text-red-400/60 mt-0.5 uppercase tracking-wide font-medium">Regressions</div>
-            </div>
-            <div className="bg-green-950/20 border border-green-900/40 rounded-xl p-4 text-center">
-              <div className="text-3xl font-black text-green-400">{counts.improvement ?? 0}</div>
-              <div className="text-xs text-green-400/60 mt-0.5 uppercase tracking-wide font-medium">Improvements</div>
-            </div>
-            <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-4 text-center">
-              <div className="text-3xl font-black text-slate-400">{counts.neutral ?? 0}</div>
-              <div className="text-xs text-slate-500 mt-0.5 uppercase tracking-wide font-medium">Neutral</div>
-            </div>
-          </div>
-
-          {/* ④ ACTIONABLE SUGGESTIONS */}
+          {/* ④ Actionable suggestions */}
           {suggestions.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
-                Actionable Suggestions
-              </h3>
+              <div className="label">Actionable Suggestions</div>
               <div className="space-y-2">
                 {suggestions.map((s, i) => {
                   const st = SG_STYLES[s.priority] ?? SG_STYLES.info
                   return (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, x: -8 }}
+                      initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.06 }}
-                      className={`rounded-xl p-4 border flex gap-4 ${st.card}`}
+                      transition={{ delay: i * 0.05, duration: 0.2 }}
+                      className={`card-elevated border ${st.border} ${st.bg} p-4 flex gap-4`}
                     >
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${st.ib} flex items-center justify-center text-xl font-bold`}>
+                      {/* Icon */}
+                      <div className={`flex-shrink-0 w-9 h-9 rounded-md ${st.iconBg} flex items-center justify-center text-base font-bold`}>
                         {s.icon}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-semibold text-sm ${st.tt}`}>{s.title}</div>
-                        <p className="text-slate-400 text-xs mt-1 leading-relaxed">{s.detail}</p>
-                        <div className="mt-2 flex items-start gap-2">
-                          <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg border ${st.tag}`}>
-                            Fix
-                          </span>
-                          <span className="text-xs text-slate-500 italic leading-relaxed">{s.action}</span>
+                      {/* Body */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className={`text-sm font-semibold ${st.titleColor}`}>{s.title}</div>
+                        <p className="text-xs text-ink-2 leading-relaxed">{s.detail}</p>
+                        <div className="flex items-start gap-2 pt-0.5">
+                          <span className={`flex-shrink-0 ${st.tag}`}>Fix</span>
+                          <span className="text-xs text-ink-3 italic leading-relaxed">{s.action}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -327,13 +421,11 @@ export default function Level2() {
             </div>
           )}
 
-          {/* ⑤ ANNOTATED COMPARISONS */}
+          {/* ⑤ Annotated comparisons — 2-col grid */}
           {(report.before_report?.annotated_screenshot || report.after_report?.annotated_screenshot) && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
-                Annotated Findings
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="label">Annotated Findings</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {report.before_report?.annotated_screenshot && (
                   <AnnotatedViewer
                     imagePath={report.before_report.annotated_screenshot}
@@ -352,26 +444,32 @@ export default function Level2() {
             </div>
           )}
 
-          {/* ⑥ CHANGES LIST with filter tabs */}
+          {/* ⑥ Changes list with filter tabs */}
           <div className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+              <div className="label">
                 Detected Changes ({report.changes?.length ?? 0})
-              </h3>
-              <div className="flex gap-1 bg-slate-800/60 rounded-xl p-1 border border-slate-700">
-                {['all', 'regression', 'improvement', 'neutral'].map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setChangeFilter(f)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
-                      changeFilter === f
-                        ? 'bg-blue-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    {f === 'all' ? `All (${report.changes?.length ?? 0})` : `${f} (${counts[f] ?? 0})`}
-                  </button>
-                ))}
+              </div>
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1 p-1 card">
+                {FILTER_TABS.map(f => {
+                  const active = changeFilter === f
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setChangeFilter(f)}
+                      className={
+                        active
+                          ? 'px-3 py-1 rounded-sm text-xs font-semibold bg-accent text-white transition-colors duration-150'
+                          : 'btn-ghost px-3 py-1 text-xs capitalize'
+                      }
+                    >
+                      {f === 'all'
+                        ? `All (${report.changes?.length ?? 0})`
+                        : `${f.charAt(0).toUpperCase() + f.slice(1)} (${counts[f] ?? 0})`}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -381,84 +479,93 @@ export default function Level2() {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-2"
+                transition={{ duration: 0.12 }}
+                className="card divide-y divide-edge-1"
               >
-                {filteredChanges.map((c, i) => {
-                  const st = CLS_STYLES[c.classification] ?? CLS_STYLES.neutral
-                  return (
-                    <div key={c.change_id || i} className={`rounded-xl p-4 border ${st.card}`}>
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className={`text-xl font-black leading-none ${st.ic}`}>{st.icon}</span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border capitalize ${st.badge}`}>
-                          {c.classification}
-                        </span>
-                        <span className="text-xs text-slate-500 font-mono bg-slate-800/60 px-1.5 py-0.5 rounded">
-                          {c.type.replace(/_/g, ' ')}
-                        </span>
-                        {c.accessibility_regression && (
-                          <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full border border-red-800/50">
-                            ⚠ A11y regression
+                {filteredChanges.length === 0 ? (
+                  <p className="text-ink-3 text-sm py-8 text-center">
+                    No {changeFilter === 'all' ? '' : changeFilter + ' '}changes detected.
+                  </p>
+                ) : (
+                  filteredChanges.map((c, i) => {
+                    const st = CLS_STYLES[c.classification] ?? CLS_STYLES.neutral
+                    return (
+                      <div key={c.change_id || i} className="p-4 space-y-2">
+                        {/* Top row: badge + type + a11y tag + pixel diff */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`font-black text-base leading-none ${st.arrowColor}`}>
+                            {st.arrow}
                           </span>
-                        )}
-                        {c.pixel_diff_percentage != null && (
-                          <span className="ml-auto text-xs text-slate-600 flex-shrink-0">
-                            {c.pixel_diff_percentage.toFixed(1)}% pixel diff
+                          <span className={st.badge}>
+                            {c.classification}
                           </span>
-                        )}
-                      </div>
-
-                      <div className="font-medium text-slate-200 text-sm mt-2">{c.element_description}</div>
-
-                      {c.reasoning && (
-                        <div className="text-xs text-slate-400 mt-1.5 leading-relaxed">{c.reasoning}</div>
-                      )}
-
-                      {/* Before / after value pill */}
-                      {(c.before?.value != null || c.after?.value != null) && (
-                        <div className="flex items-center gap-2 mt-2.5 font-mono text-xs text-slate-500">
-                          <span className="bg-slate-800/80 border border-slate-700 px-2 py-0.5 rounded">
-                            {String(c.before?.value ?? '—')}
+                          <span className="text-2xs font-mono text-ink-3 bg-surface-2 border border-edge-2 px-1.5 py-0.5 rounded-xs">
+                            {c.type.replace(/_/g, ' ')}
                           </span>
-                          <span className="text-slate-600">→</span>
-                          <span className="bg-slate-800/80 border border-slate-700 px-2 py-0.5 rounded">
-                            {String(c.after?.value ?? '—')}
-                          </span>
-                          {c.before?.wcag_contrast != null && c.after?.wcag_contrast != null && (
-                            <span className="text-slate-600 ml-1">
-                              · WCAG {c.before.wcag_contrast.toFixed(2)} → {c.after.wcag_contrast.toFixed(2)}
+                          {c.accessibility_regression && (
+                            <span className="badge badge-critical">⚠ A11y regression</span>
+                          )}
+                          {c.pixel_diff_percentage != null && (
+                            <span className="ml-auto text-2xs text-ink-3 flex-shrink-0">
+                              {c.pixel_diff_percentage.toFixed(1)}% pixel diff
                             </span>
                           )}
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
 
-                {filteredChanges.length === 0 && (
-                  <p className="text-slate-500 text-sm py-6 text-center">
-                    No {changeFilter === 'all' ? '' : changeFilter + ' '}changes detected.
-                  </p>
+                        {/* Element description */}
+                        <div className="text-sm font-medium text-ink-1">{c.element_description}</div>
+
+                        {/* Reasoning */}
+                        {c.reasoning && (
+                          <div className="text-xs text-ink-2 leading-relaxed">{c.reasoning}</div>
+                        )}
+
+                        {/* Before / after value pills */}
+                        {(c.before?.value != null || c.after?.value != null) && (
+                          <div className="flex items-center gap-2 font-mono text-xs text-ink-3 flex-wrap">
+                            <span className="bg-surface-2 border border-edge-2 px-2 py-0.5 rounded-xs">
+                              {String(c.before?.value ?? '—')}
+                            </span>
+                            <span className="text-ink-3">→</span>
+                            <span className="bg-surface-2 border border-edge-2 px-2 py-0.5 rounded-xs">
+                              {String(c.after?.value ?? '—')}
+                            </span>
+                            {c.before?.wcag_contrast != null && c.after?.wcag_contrast != null && (
+                              <span className="text-ink-3 ml-1">
+                                · WCAG {c.before.wcag_contrast.toFixed(2)} → {c.after.wcag_contrast.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
                 )}
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* ⑦ PER-VERSION FINDINGS (tabbed) */}
+          {/* ⑦ Per-version findings (tabbed) */}
           {(report.before_report?.findings?.length > 0 || report.after_report?.findings?.length > 0) && (
             <div className="space-y-3">
-              <div className="flex gap-1 bg-slate-800/60 rounded-xl p-1 border border-slate-700 w-fit">
+              <div className="label">Per-Version Findings</div>
+
+              {/* Tab strip */}
+              <div className="flex items-center gap-1 p-1 card w-fit">
                 {['before', 'after'].map(tab => {
                   const count = tab === 'before'
                     ? (report.before_report?.findings?.length ?? 0)
                     : (report.after_report?.findings?.length ?? 0)
+                  const active = findingsTab === tab
                   return (
                     <button
                       key={tab}
                       onClick={() => setFindingsTab(tab)}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
-                        findingsTab === tab ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                      className={
+                        active
+                          ? 'px-4 py-1.5 rounded-sm text-xs font-semibold bg-accent text-white capitalize transition-colors duration-150'
+                          : 'btn-ghost px-4 py-1.5 text-xs capitalize'
+                      }
                     >
                       {tab} — {count} finding{count !== 1 ? 's' : ''}
                     </button>
@@ -466,6 +573,7 @@ export default function Level2() {
                 })}
               </div>
 
+              {/* Findings scroll list */}
               <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
                 {((findingsTab === 'before'
                   ? report.before_report?.findings
