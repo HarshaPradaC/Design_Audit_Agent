@@ -3,7 +3,7 @@ import json
 import uuid
 from pathlib import Path
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, Text
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, Text, text
 from sqlalchemy.orm import DeclarativeBase, Session
 from schemas import BaselineEntry
 from config import settings
@@ -23,6 +23,7 @@ class BaselineRow(Base):
     page = Column(String, nullable=False, index=True)
     screenshot_path = Column(String)
     ui_state_path = Column(String, nullable=True)
+    annotated_url = Column(String, nullable=True)
     version = Column(Integer, default=1)
     approved = Column(Boolean, default=True)
     approved_by = Column(String, default="auto")
@@ -39,6 +40,13 @@ def _get_engine():
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         _engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
         Base.metadata.create_all(_engine)
+        # Safe migration: add annotated_url column to existing DBs that predate it
+        with _engine.connect() as conn:
+            try:
+                conn.execute(text("ALTER TABLE baselines ADD COLUMN annotated_url VARCHAR"))
+                conn.commit()
+            except Exception:
+                pass  # Column already exists — ignore
     return _engine
 
 
@@ -54,6 +62,7 @@ class BaselineStore:
         approved: bool = True,
         report_summary: dict | None = None,
         ui_state_path: str | None = None,
+        annotated_url: str | None = None,
     ) -> BaselineEntry:
         with self._session() as session:
             version = self._get_next_version(page_name, session)
@@ -66,6 +75,7 @@ class BaselineStore:
                 page=page_name,
                 screenshot_path=str(path),
                 ui_state_path=ui_state_path,
+                annotated_url=annotated_url,
                 version=version,
                 approved=approved,
                 approved_by="auto",
@@ -82,6 +92,7 @@ class BaselineStore:
                 approved=approved,
                 screenshot_path=str(path),
                 ui_state_path=ui_state_path,
+                annotated_url=annotated_url,
                 version=version,
             )
 
@@ -102,6 +113,7 @@ class BaselineStore:
                 approved=row.approved,
                 screenshot_path=row.screenshot_path,
                 ui_state_path=row.ui_state_path,
+                annotated_url=row.annotated_url,
                 version=row.version,
             )
 

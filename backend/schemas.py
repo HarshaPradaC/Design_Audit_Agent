@@ -261,6 +261,7 @@ class BaselineEntry(BaseModel):
     screenshot_path: str
     ui_state_path: Optional[str] = None
     report_summary: Optional[dict] = None
+    annotated_url: Optional[str] = None
     version: int = 1
 
 

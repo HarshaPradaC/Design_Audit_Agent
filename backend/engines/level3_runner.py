@@ -231,7 +231,7 @@ async def run_level3_async(
                 pr.message = f"L1 error: {e} — baseline saved"
                 print(f"[l3] L1 error on {page_name}: {e}")
 
-            store.save(page_name, capture.image_bytes)
+            store.save(page_name, capture.image_bytes, annotated_url=pr.annotated_url)
             status.pages_processed += 1
             status.page_results.append(pr)
             l3_page_data.append((pr, l1_report))
@@ -261,6 +261,7 @@ async def run_level3_async(
                     page=page_name,
                     run_type="no_change",
                     screenshot_url=screenshot_filename or None,
+                    annotated_url=baseline.annotated_url,  # reuse baseline L1 annotation
                     message="Design unchanged since last baseline",
                 )
                 status.pages_processed += 1
